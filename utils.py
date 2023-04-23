@@ -70,7 +70,7 @@ class SpectralNorm(nn.Module):
         return self.module.forward(*args)
     
 
-def save_model(g_state_dict, d_state_dict, epochs, d_optimizer, g_optimizer, criterion, min_g_loss, min_d_loss):
+def save_model(g_state_dict, d_state_dict, epochs, d_optimizer, g_optimizer, criterion):
     """
     Function to save the trained model to disk.
     """
@@ -81,22 +81,26 @@ def save_model(g_state_dict, d_state_dict, epochs, d_optimizer, g_optimizer, cri
                 'd_optimizer_state_dict': d_optimizer.state_dict(),
                 'g_optimizer_state_dict': g_optimizer.state_dict(),
                 'criterion': criterion,
-                'min_g_loss': min_g_loss, 
-                'min_d_loss': min_d_loss, 
                 }, 'model.pth')
 
 
 def weight_init(m):
     """ Accepts the model and initialize weights for Conv. and Batchnorm layers."""
-    if isinstance(m, nn.Conv2d): 
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif isinstance(m, nn.BatchNorm2d):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        if hasattr(m, 'weight'):
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+        else:
+            nn.init.normal_(m.weight_u.data, 0.0, 0.02)
+            nn.init.normal_(m.weight_v.data, 0.0, 0.02)
+            nn.init.normal_(m.weight_bar.data, 0.0, 0.02)
+             
+    elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
 
 def show_image(img, epoch):
-    plt.title(f"Epoch_{epoch}")
     plt.figure(figsize=(3, 3))
     plt.axis('off')
     plt.imshow(img)
